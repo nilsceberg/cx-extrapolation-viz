@@ -1,0 +1,66 @@
+:root {
+  --bg: #12151c;
+  --panel: #1a1f29;
+  --text: #dde3ee;
+  --muted: #8a93a6;
+  --left: #4f8fd6;
+  --right: #d98b4a;
+  --neutral: #4fb3a8;
+  --stroke: #0c0e13;
+  --highlight: #ffe27a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app { max-width: 1200px; margin: 0 auto; padding: 1.25rem; }
+header h1 { margin: 0; font-size: 1.4rem; }
+header p { margin: 0.25rem 0 1rem; color: var(--muted); }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 1.25rem; align-items: start; }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+
+aside { display: flex; flex-direction: column; gap: 1rem; }
+aside section { background: var(--panel); border-radius: 8px; padding: 0.9rem 1rem; }
+aside h2 { margin: 0 0 0.6rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+aside label { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; font-size: 0.9rem; }
+aside input { width: 4.5rem; background: var(--bg); color: var(--text); border: 1px solid #343b4a; border-radius: 4px; padding: 0.25rem 0.4rem; }
+.readout { margin: 0; font-size: 0.9rem; min-height: 2.6em; }
+.hint { margin: 0.4rem 0 0; font-size: 0.78rem; color: var(--muted); }
+
+.cx-svg { width: 100%; height: auto; background: var(--panel); border-radius: 8px; user-select: none; }
+
+.midline { stroke: #3a4254; stroke-width: 1; stroke-dasharray: 4 6; }
+.pb-spine { fill: none; stroke: #2b3242; stroke-width: 6; stroke-linecap: round; }
+
+/* Subunit cells. Fill = hemisphere tint; the R/L side gets a slightly different shade. */
+.subunit { stroke: var(--stroke); stroke-width: 1; cursor: pointer; outline: none; transition: fill 0.12s; }
+.subunit.hemi-L { --tint: var(--left); }
+.subunit.hemi-R { --tint: var(--right); }
+.subunit.hemi-none { --tint: var(--neutral); }
+.subunit.side-R { fill: color-mix(in srgb, var(--tint) 62%, var(--panel)); }
+.subunit.side-L { fill: color-mix(in srgb, var(--tint) 42%, var(--panel)); }
+.subunit.hovered { fill: var(--tint); }
+.subunit.selected { fill: var(--tint); stroke: #fff; stroke-width: 2; }
+
+/* Common outline of a glomerulus / wedge. */
+.unit-outline { fill: none; stroke: #5b667d; stroke-width: 1.5; stroke-linejoin: round; pointer-events: none; }
+.unit-outline.hovered { stroke: var(--highlight); stroke-width: 2.5; }
+.unit-outline.selected { stroke: #fff; stroke-width: 2.5; }
+
+.eb-canal { fill: var(--bg); stroke: #2b3242; stroke-width: 1.5; pointer-events: none; }
+
+.unit-label { fill: var(--muted); font-size: 12px; pointer-events: none; }
+.structure-label { fill: var(--muted); font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+aside dl { display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 1rem; margin: 0; font-size: 0.9rem; }
+aside dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+aside dt { color: var(--muted); }
+code { font-size: 0.85em; }
