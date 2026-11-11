@@ -194,10 +194,14 @@ function buildPB(specs: UnitSpec[]) {
     0,
     specs.findIndex((u, i) => i > 0 && u.hemisphere !== specs[i - 1].hemisphere),
   );
-  const totalSpan = n * pitch + MIDLINE_GAP;
+  // MIDLINE_GAP is the full edge-to-edge gap between the innermost glomeruli of
+  // the two hemispheres; it replaces (rather than adds to) the regular gap there.
+  const extraAtMidline = MIDLINE_GAP - GLOM_GAP;
+  const totalSpan = n * pitch - GLOM_GAP + extraAtMidline;
   const width = Math.max(MIN_WIDTH, totalSpan + 2 * MARGIN);
   const left = (width - totalSpan) / 2;
-  const midlineX = left + split * pitch + MIDLINE_GAP / 2;
+  // Right edge of the last glomerulus before the split, plus half the gap.
+  const midlineX = left + split * pitch - GLOM_GAP + MIDLINE_GAP / 2;
 
   // Parabola y = PB_TOP + k * dx^2, with the farthest tip dropping by PB_DROP.
   const farthest = Math.max(midlineX - left, left + totalSpan - midlineX);
@@ -207,7 +211,7 @@ function buildPB(specs: UnitSpec[]) {
     spineY(x) + (role === "pre" ? -1 : 1) * GLOM_HEIGHT * 0.5 * PB_TRACK_FRACTION;
 
   const units = specs.map((spec, i) => {
-    const x0 = left + i * pitch + (i >= split ? MIDLINE_GAP : 0);
+    const x0 = left + i * pitch + (i >= split ? extraAtMidline : 0);
     const cx = x0 + GLOM_WIDTH / 2;
     const center: Point = { x: cx, y: spineY(cx) };
     const angle = (Math.atan(2 * k * (cx - midlineX)) * 180) / Math.PI;
