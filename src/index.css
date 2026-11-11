@@ -145,3 +145,10 @@ main {
 .endpoints.pre .endpoint { fill: var(--pre); }
 .endpoints.post .endpoint { fill: var(--post); }
 .endpoint { stroke: var(--stroke); stroke-width: 1.5; }
+
+/* Lines connecting a cell's endpoints. */
+.arbor path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.arbor-halo { stroke: var(--stroke); stroke-width: 5; opacity: 0.55; }
+.arbor-line { stroke-width: 2.25; }
+.arbor.pre .arbor-line { stroke: var(--pre); }
+.arbor.post .arbor-line { stroke: var(--post); }

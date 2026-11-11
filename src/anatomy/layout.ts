@@ -66,6 +66,8 @@ export interface Layout {
     /** Backbone through the PB, drawn behind the glomeruli. */
     spine: string;
     labelPos: Point;
+    /** y of a role's "track" (a curve parallel to the bridge) at horizontal position x. */
+    trackY: (role: Role, x: number) => number;
   };
   eb: {
     center: Point;
@@ -93,6 +95,8 @@ const PB_DROP = 56;
 const PB_TOP = 130;
 /** Outline sits this far outside the subunits. */
 const PB_OUTLINE_PAD = 2.5;
+/** Pre/post tracks run this far above/below the bridge's spine (fraction of glomerulus half-height). */
+const PB_TRACK_FRACTION = 0.45;
 
 // EB
 const EB_INNER_R = 85;
@@ -109,7 +113,7 @@ const rad = (deg: number) => (deg * Math.PI) / 180;
 const f = (n: number) => n.toFixed(2);
 
 /** Polar -> cartesian where 0deg is 12 o'clock and angles run clockwise. */
-function polar(c: Point, r: number, deg: number): Point {
+export function polar(c: Point, r: number, deg: number): Point {
   return { x: c.x + r * Math.sin(rad(deg)), y: c.y - r * Math.cos(rad(deg)) };
 }
 
@@ -199,6 +203,8 @@ function buildPB(specs: UnitSpec[]) {
   const farthest = Math.max(midlineX - left, left + totalSpan - midlineX);
   const k = PB_DROP / (farthest * farthest);
   const spineY = (x: number) => PB_TOP + k * (x - midlineX) ** 2;
+  const trackY = (role: Role, x: number) =>
+    spineY(x) + (role === "pre" ? -1 : 1) * GLOM_HEIGHT * 0.5 * PB_TRACK_FRACTION;
 
   const units = specs.map((spec, i) => {
     const x0 = left + i * pitch + (i >= split ? MIDLINE_GAP : 0);
@@ -213,12 +219,15 @@ function buildPB(specs: UnitSpec[]) {
       [0, hw],
     ].map(([x0, x1]) => {
       const r = rotatedRect(center, angle, x0, -hh, x1, hh);
-      const mx = (x0 + x1) / 2;
+      // Markers sit exactly on the role's track so lines along the bridge pass through them.
+      const x = center.x + (x0 + x1) / 2;
       return {
         path: r.path,
         center: r.center,
-        // Presynaptic marker in the upper part of the cell, postsynaptic in the lower.
-        endpoints: { pre: r.at(mx, -hh * 0.45), post: r.at(mx, hh * 0.45) },
+        endpoints: {
+          pre: { x, y: trackY("pre", x) },
+          post: { x, y: trackY("post", x) },
+        },
       };
     });
     const outline = rotatedRect(
@@ -247,7 +256,7 @@ function buildPB(specs: UnitSpec[]) {
     spinePts.push(`${s === 0 ? "M" : "L"} ${f(x)} ${f(spineY(x))}`);
   }
 
-  return { units, spine: spinePts.join(" "), width, midlineX };
+  return { units, spine: spinePts.join(" "), width, midlineX, trackY };
 }
 
 function buildEB(specs: UnitSpec[], center: Point) {
@@ -317,6 +326,7 @@ export function buildLayout(neuropils: Neuropils): Layout {
       units: pb.units,
       spine: pb.spine,
       labelPos: { x: pb.midlineX, y: PB_TOP - GLOM_HEIGHT / 2 - 36 },
+      trackY: pb.trackY,
     },
     eb: {
       center: ebCenter,
