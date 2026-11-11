@@ -34,7 +34,14 @@ export interface Subunit {
   path: string;
   /** Anchor for overlays/labels. */
   center: Point;
+  /**
+   * Where to mark a cell's endpoint in this subunit. Pre- and postsynaptic
+   * markers use different spots so both stay visible when they coincide.
+   */
+  endpoints: Record<Role, Point>;
 }
+
+export type Role = "pre" | "post";
 
 export interface Unit {
   id: string;
@@ -129,7 +136,7 @@ function rotatedRect(
   y0: number,
   x1: number,
   y1: number,
-): { path: string; center: Point } {
+): { path: string; center: Point; at: (x: number, y: number) => Point } {
   const cos = Math.cos(rad(angleDeg));
   const sin = Math.sin(rad(angleDeg));
   const map = (x: number, y: number): Point => ({
@@ -140,6 +147,7 @@ function rotatedRect(
   return {
     path: pts.map((p, i) => `${i ? "L" : "M"} ${f(p.x)} ${f(p.y)}`).join(" ") + " Z",
     center: map((x0 + x1) / 2, (y0 + y1) / 2),
+    at: map,
   };
 }
 
@@ -149,7 +157,7 @@ function toUnit(
   outline: string,
   labelPos: Point,
   center: Point,
-  subunits: Pick<Subunit, "path" | "center">[],
+  subunits: Pick<Subunit, "path" | "center" | "endpoints">[],
 ): Unit {
   const [a, b] = spec.subunits.map((s, i) => ({
     id: s.id,
@@ -201,9 +209,18 @@ function buildPB(specs: UnitSpec[]) {
     const hh = GLOM_HEIGHT / 2;
 
     const cells = [
-      rotatedRect(center, angle, -hw, -hh, 0, hh),
-      rotatedRect(center, angle, 0, -hh, hw, hh),
-    ];
+      [-hw, 0],
+      [0, hw],
+    ].map(([x0, x1]) => {
+      const r = rotatedRect(center, angle, x0, -hh, x1, hh);
+      const mx = (x0 + x1) / 2;
+      return {
+        path: r.path,
+        center: r.center,
+        // Presynaptic marker in the upper part of the cell, postsynaptic in the lower.
+        endpoints: { pre: r.at(mx, -hh * 0.45), post: r.at(mx, hh * 0.45) },
+      };
+    });
     const outline = rotatedRect(
       center,
       angle,
@@ -246,10 +263,18 @@ function buildEB(specs: UnitSpec[], center: Point) {
     const cells = [
       [a0, half],
       [half, a1],
-    ].map(([s, e]) => ({
-      path: annularSector(center, EB_INNER_R, EB_OUTER_R, s, e),
-      center: polar(center, mid, (s + e) / 2),
-    }));
+    ].map(([s, e]) => {
+      const thickness = EB_OUTER_R - EB_INNER_R;
+      return {
+        path: annularSector(center, EB_INNER_R, EB_OUTER_R, s, e),
+        center: polar(center, mid, (s + e) / 2),
+        // Presynaptic marker toward the outer rim, postsynaptic toward the canal.
+        endpoints: {
+          pre: polar(center, EB_INNER_R + thickness * 0.72, (s + e) / 2),
+          post: polar(center, EB_INNER_R + thickness * 0.28, (s + e) / 2),
+        },
+      };
+    });
 
     // Pad the outline outward so it frames the cells instead of overlapping them.
     const angPad = (EB_OUTLINE_PAD / EB_OUTER_R) * (180 / Math.PI);
