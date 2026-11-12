@@ -36,9 +36,10 @@ export type Kernels = Record<NeuropilName, Record<string, Partial<Record<Directi
 
 /** Relative arborization (0..1) per subunit id; subunits with 0 are omitted. */
 export type SubunitValues = ReadonlyMap<string, number>;
-export type Arborization = Record<Role, SubunitValues>;
+/** Per role: the cell's arborization, or null while no cell is selected for that role. */
+export type Arborization = Record<Role, SubunitValues | null>;
 
-export const EMPTY_ARBORIZATION: Arborization = { pre: new Map(), post: new Map() };
+export const NO_ARBORIZATION: Arborization = { pre: null, post: null };
 
 /** Which kernel each role uses. */
 export const ROLE_DIRECTION: Record<Role, Direction> = { pre: "output", post: "input" };

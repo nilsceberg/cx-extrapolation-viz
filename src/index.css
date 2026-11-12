@@ -7,6 +7,8 @@
   --right: #d98b4a;
   --neutral: #4fb3a8;
   --stroke: #0c0e13;
+  /* Background of a subunit half once a cell is selected for its role. */
+  --empty: #232a37;
   --highlight: #ffe27a;
   /* Roles in the synapse overlay. Distinct from the hemisphere / hover colours. */
   --pre: #f0568f;
@@ -121,15 +123,20 @@ main {
 .midline { stroke: #3a4254; stroke-width: 1; stroke-dasharray: 4 6; }
 .pb-spine { fill: none; stroke: #2b3242; stroke-width: 6; stroke-linecap: round; }
 
-/* Subunit cells. Fill = hemisphere tint; the R/L side gets a slightly different shade. */
-.subunit { stroke: var(--stroke); stroke-width: 1; cursor: pointer; outline: none; transition: fill 0.12s; }
-.subunit.hemi-L { --tint: var(--left); }
-.subunit.hemi-R { --tint: var(--right); }
-.subunit.hemi-none { --tint: var(--neutral); }
-.subunit.side-R { fill: color-mix(in srgb, var(--tint) 62%, var(--panel)); }
-.subunit.side-L { fill: color-mix(in srgb, var(--tint) 42%, var(--panel)); }
-.subunit.hovered { fill: var(--tint); }
-.subunit.selected { fill: var(--tint); }
+/* Subunit cells. The interactive cell is transparent: it only supplies the border and the
+   mouse/keyboard target. Colour comes from the per-half background layer below it. */
+.subunit { fill: transparent; stroke: var(--stroke); stroke-width: 1; cursor: pointer; outline: none; }
+.subunit-hover { fill: #fff; fill-opacity: 0.14; pointer-events: none; }
+
+/* Default background: hemisphere tint, with the R/L side in a slightly different shade. */
+.bg { stroke: none; pointer-events: none; }
+.hemi-L { --tint: var(--left); }
+.hemi-R { --tint: var(--right); }
+.hemi-none { --tint: var(--neutral); }
+.bg.side-R { fill: color-mix(in srgb, var(--tint) 62%, var(--panel)); }
+.bg.side-L { fill: color-mix(in srgb, var(--tint) 42%, var(--panel)); }
+/* A cell is selected for this half's role: drop the tint so the kernel shading reads cleanly. */
+.bg.off { fill: var(--empty); }
 
 /* Common outline of a glomerulus / wedge. */
 .unit-outline { fill: none; stroke: #5b667d; stroke-width: 1.5; stroke-linejoin: round; pointer-events: none; }

@@ -3,7 +3,7 @@ import neuropilData from "../data/fly-neuropils.json";
 import projectionData from "../data/fly-projections.json";
 import structureData from "../data/fly-structure.json";
 import {
-  EMPTY_ARBORIZATION,
+  NO_ARBORIZATION,
   assertKernelsCoverCells,
   computeArborization,
   parseKernels,
@@ -27,8 +27,8 @@ assertKernelsCoverCells(cells, kernels);
 function describe(s: Subunit, arborization: Arborization): string {
   const unit = s.neuropil === "PB" ? "PB glomerulus" : "EB wedge";
   const parts = [`${s.id} — ${s.side} subunit of ${unit} ${s.unitId}`];
-  const pre = arborization.pre.get(s.id);
-  const post = arborization.post.get(s.id);
+  const pre = arborization.pre?.get(s.id);
+  const post = arborization.post?.get(s.id);
   if (pre !== undefined) parts.push(`pre (output) ${format(pre)}`);
   if (post !== undefined) parts.push(`post (input) ${format(post)}`);
   return parts.join(" · ");
@@ -49,8 +49,8 @@ export function App() {
   // Presynaptic cells shade their output kernel, postsynaptic cells their input kernel.
   const arborization = useMemo<Arborization>(
     () => ({
-      pre: pre ? computeArborization(layout, kernels, FLY_KERNEL_RULES, pre, "pre") : EMPTY_ARBORIZATION.pre,
-      post: post ? computeArborization(layout, kernels, FLY_KERNEL_RULES, post, "post") : EMPTY_ARBORIZATION.post,
+      pre: pre ? computeArborization(layout, kernels, FLY_KERNEL_RULES, pre, "pre") : NO_ARBORIZATION.pre,
+      post: post ? computeArborization(layout, kernels, FLY_KERNEL_RULES, post, "post") : NO_ARBORIZATION.post,
     }),
     [pre, post],
   );
