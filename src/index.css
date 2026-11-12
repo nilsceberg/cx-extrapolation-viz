@@ -23,7 +23,7 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-.app { max-width: 1500px; margin: 0 auto; padding: 1.25rem; }
+.app { max-width: 2200px; margin: 0 auto; padding: 1.25rem; }
 header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.5rem 1.5rem; }
 header h1 { margin: 0; font-size: 1.4rem; }
 header p { margin: 0.25rem 0 1rem; color: var(--muted); }
@@ -76,7 +76,8 @@ main {
   gap: 0.6rem;
   position: sticky;
   top: 1rem;
-  max-height: calc(100vh - 2rem);
+  /* The lists start below the header, so leave room for it: the page then fits in one screen. */
+  max-height: calc(100vh - 7rem);
 }
 .cell-list.post { --role: var(--post); }
 
@@ -138,7 +139,8 @@ main {
 
 /* --- diagram ----------------------------------------------------------- */
 
-.cx-svg { width: 100%; height: auto; background: var(--panel); border-radius: 8px; user-select: none; }
+/* Grows with the window, but leaves room under it for the readout and the synapse formula. */
+.cx-svg { width: 100%; height: auto; max-height: max(calc(100vh - 25rem), 34rem); background: var(--panel); border-radius: 8px; user-select: none; }
 
 .midline { stroke: #3a4254; stroke-width: 1; stroke-dasharray: 4 6; }
 .pb-spine { fill: none; stroke: #2b3242; stroke-width: 6; stroke-linecap: round; }
