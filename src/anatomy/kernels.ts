@@ -1,5 +1,5 @@
 /**
- * Arborization kernels (data/fly-structure.json).
+ * Arborization kernels (the species' structure data).
  *
  * Each cell type has an input and an output kernel per neuropil:
  *
@@ -7,7 +7,7 @@
  *
  * A kernel is f(offset) = relative arborization (1 = peak), where `offset` is a
  * number of subunits counted from a projection. Positive offsets point towards
- * later subunits in the order of fly-neuropils.json (PB: left -> right on
+ * later subunits in the order of the neuropils file (PB: left -> right on
  * screen, EB: clockwise around the ring as drawn). Offsets outside the listed
  * range contribute 0.
  *
@@ -56,7 +56,7 @@ function parseKernel(where: string, raw: unknown): Kernel {
   const offsets = k?.offsets;
   const values = k?.values;
   if (!isNums(offsets) || !isNums(values) || offsets.length !== values.length) {
-    throw new Error(`fly-structure.json: ${where} needs numeric "offsets" and "values" of equal length`);
+    throw new Error(`structure data: ${where} needs numeric "offsets" and "values" of equal length`);
   }
   const lookup = new Map(offsets.map((o, i) => [o, values[i]]));
   return { offsets, values, at: (o) => lookup.get(o) ?? 0 };
@@ -64,7 +64,7 @@ function parseKernel(where: string, raw: unknown): Kernel {
 
 export function parseKernels(raw: unknown): Kernels {
   const byNeuropil = (raw as { kernels?: Record<string, unknown> })?.kernels;
-  if (!byNeuropil) throw new Error('fly-structure.json: missing "kernels"');
+  if (!byNeuropil) throw new Error('structure data: missing "kernels"');
 
   const out = { PB: {}, EB: {} } as Kernels;
   for (const np of NEUROPILS) {

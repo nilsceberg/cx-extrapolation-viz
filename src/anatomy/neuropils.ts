@@ -1,5 +1,5 @@
 /**
- * Parsing of data/fly-neuropils.json.
+ * Parsing of the neuropils file.
  *
  * The file lists every *subunit* of each neuropil in spatial order (PB: along
  * the bridge, EB: around the ring). Subunit names encode their parent unit:
@@ -44,7 +44,7 @@ const SUBUNITS_PER_UNIT = 2;
 
 function parseList(neuropil: NeuropilName, names: unknown): UnitSpec[] {
   if (!Array.isArray(names) || !names.every((n) => typeof n === "string")) {
-    throw new Error(`fly-neuropils.json: "${neuropil}" must be an array of strings`);
+    throw new Error(`neuropil data: "${neuropil}" must be an array of strings`);
   }
   const units: UnitSpec[] = [];
   const seen = new Set<string>();

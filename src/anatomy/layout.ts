@@ -86,6 +86,10 @@ export interface Layout {
     outerRadius: number;
     units: Unit[];
     labelPos: Point;
+    /** A closed ring (wedges wrap around), or an open arc with a gap at the bottom. */
+    closed: boolean;
+    /** Angle (clockwise from 12 o'clock) where the first wedge starts. */
+    startDeg: number;
   };
   /** Lookup of every subunit by its data-file name. */
   subunitIndex: ReadonlyMap<string, Subunit>;
@@ -117,8 +121,19 @@ const EB_OUTER_R = 175;
 /** Gap between neighbouring wedges, in degrees. */
 const EB_WEDGE_GAP_DEG = 3;
 const EB_OUTLINE_PAD = 2.5;
-/** Angle (clockwise from 12 o'clock) at which the first subunit starts: 180 = 6 o'clock. */
+/** Closed EB: the first wedge starts here (clockwise from 12 o'clock; 180 = 6 o'clock). */
 const EB_START_DEG = 180;
+/**
+ * Open EB: the wedges cover the ring except for a gap of this many degrees,
+ * centred on 6 o'clock (so the arc stays symmetric about the midline). The first
+ * wedge starts just after the gap and numbering runs clockwise, like the closed EB.
+ */
+const EB_OPEN_GAP_DEG = 72;
+
+export interface LayoutOptions {
+  /** Whether the EB is a closed ring (otherwise an open arc). */
+  ebClosed: boolean;
+}
 
 // --- helpers ---------------------------------------------------------------
 
@@ -301,11 +316,17 @@ function buildPB(specs: UnitSpec[]) {
   return { units, spine: spinePts.join(" "), width, midlineX, trackY };
 }
 
-function buildEB(specs: UnitSpec[], center: Point) {
-  const unitStep = 360 / specs.length;
+/** Where the first wedge starts and how wide each wedge is, for a closed or an open EB. */
+function ebSweep(count: number, closed: boolean): { startDeg: number; unitStep: number } {
+  if (closed) return { startDeg: EB_START_DEG, unitStep: 360 / count };
+  return { startDeg: 180 + EB_OPEN_GAP_DEG / 2, unitStep: (360 - EB_OPEN_GAP_DEG) / count };
+}
+
+function buildEB(specs: UnitSpec[], center: Point, closed: boolean) {
+  const { startDeg, unitStep } = ebSweep(specs.length, closed);
   const mid = (EB_INNER_R + EB_OUTER_R) / 2;
   return specs.map((spec, i) => {
-    const start = EB_START_DEG + i * unitStep;
+    const start = startDeg + i * unitStep;
     const end = start + unitStep;
     const a0 = start + EB_WEDGE_GAP_DEG / 2;
     const a1 = end - EB_WEDGE_GAP_DEG / 2;
@@ -362,12 +383,12 @@ function buildEB(specs: UnitSpec[], center: Point) {
   });
 }
 
-export function buildLayout(neuropils: Neuropils): Layout {
+export function buildLayout(neuropils: Neuropils, { ebClosed }: LayoutOptions): Layout {
   const pb = buildPB(neuropils.PB);
 
   const pbBottom = PB_TOP + PB_DROP + GLOM_HEIGHT / 2 + 40;
   const ebCenter: Point = { x: pb.midlineX, y: pbBottom + 60 + EB_OUTER_R };
-  const ebUnits = buildEB(neuropils.EB, ebCenter);
+  const ebUnits = buildEB(neuropils.EB, ebCenter, ebClosed);
 
   const subunitIndex = new Map<string, Subunit>();
   for (const u of [...pb.units, ...ebUnits]) {
@@ -390,6 +411,8 @@ export function buildLayout(neuropils: Neuropils): Layout {
       outerRadius: EB_OUTER_R,
       units: ebUnits,
       labelPos: { x: pb.midlineX, y: ebCenter.y - EB_OUTER_R - 48 },
+      closed: ebClosed,
+      startDeg: ebSweep(neuropils.EB.length, ebClosed).startDeg,
     },
     subunitIndex,
     order: {

@@ -1,5 +1,5 @@
 /**
- * Synapse-count estimate for a pre/post cell pair (data/fly-structure.json).
+ * Synapse-count estimate for a pre/post cell pair (the species' structure data).
  *
  * The overlap of the two cells' arborizations, summed over every subunit of a
  * neuropil, is converted to a synapse count with a per-neuropil scale that
@@ -26,7 +26,7 @@ export const SCALE_NEUROPILS: NeuropilName[] = ["PB", "EB"];
 
 export function parseScales(raw: unknown): Scales {
   const byNeuropil = (raw as { scales?: Record<string, unknown> })?.scales;
-  if (!byNeuropil) throw new Error('fly-structure.json: missing "scales"');
+  if (!byNeuropil) throw new Error('structure data: missing "scales"');
 
   const out = { PB: {}, EB: {} } as Scales;
   for (const np of SCALE_NEUROPILS) {
@@ -35,7 +35,7 @@ export function parseScales(raw: unknown): Scales {
       out[np][outer] = {};
       for (const [key, value] of Object.entries(inner)) {
         if (typeof value !== "number" || !Number.isFinite(value)) {
-          throw new Error(`fly-structure.json: scales/${np}/${outer}/${key} must be a finite number`);
+          throw new Error(`structure data: scales/${np}/${outer}/${key} must be a finite number`);
         }
         out[np][outer][key] = value;
       }
@@ -56,7 +56,7 @@ export function assertScalesCoverCells(cells: Cell[], scales: Scales): void {
     for (const pre of types) {
       for (const post of types) {
         if (scaleFor(scales, np, pre, post) === undefined) {
-          throw new Error(`fly-structure.json: no scale for ${pre} -> ${post} in ${np}`);
+          throw new Error(`structure data: no scale for ${pre} -> ${post} in ${np}`);
         }
       }
     }

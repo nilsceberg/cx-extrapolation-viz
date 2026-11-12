@@ -24,8 +24,23 @@ body {
 }
 
 .app { max-width: 1500px; margin: 0 auto; padding: 1.25rem; }
+header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.5rem 1.5rem; }
 header h1 { margin: 0; font-size: 1.4rem; }
 header p { margin: 0.25rem 0 1rem; color: var(--muted); }
+
+.species-picker { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; color: var(--muted); }
+.species-picker span { text-transform: uppercase; letter-spacing: 0.06em; }
+.species-picker select {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid #2b3242;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+}
+.species-picker select:focus-visible { outline: 2px solid var(--highlight); outline-offset: 1px; }
 
 /* Presynaptic list | diagram | postsynaptic list */
 main {

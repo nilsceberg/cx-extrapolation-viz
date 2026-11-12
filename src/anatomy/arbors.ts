@@ -58,24 +58,38 @@ function ebPiece(layout: Layout, pts: Point[]): Piece | null {
     const deg = (Math.atan2(p.x - c.x, -(p.y - c.y)) * 180) / Math.PI;
     return (deg + 360) % 360;
   };
-  const angles = pts.map(angle).sort((a, b) => a - b);
-  if (angles.length === 1 || angles[angles.length - 1] - angles[0] < 1e-6) {
-    return { path: null, attach: pts[0] };
-  }
-
-  // Open the ring at the largest gap between consecutive endpoints.
-  let gapAt = angles.length - 1; // gap between last and first (wrapping)
-  let gap = angles[0] + 360 - angles[gapAt];
-  for (let i = 0; i < angles.length - 1; i++) {
-    const g = angles[i + 1] - angles[i];
-    if (g > gap) {
-      gap = g;
-      gapAt = i;
+  let start: number;
+  let end: number;
+  if (layout.eb.closed) {
+    const angles = pts.map(angle).sort((a, b) => a - b);
+    if (angles.length === 1 || angles[angles.length - 1] - angles[0] < 1e-6) {
+      return { path: null, attach: pts[0] };
     }
+
+    // Open the ring at the largest gap between consecutive endpoints.
+    let gapAt = angles.length - 1; // gap between last and first (wrapping)
+    let gap = angles[0] + 360 - angles[gapAt];
+    for (let i = 0; i < angles.length - 1; i++) {
+      const g = angles[i + 1] - angles[i];
+      if (g > gap) {
+        gap = g;
+        gapAt = i;
+      }
+    }
+    start = angles[(gapAt + 1) % angles.length];
+    end = angles[gapAt];
+    if (end < start) end += 360;
+  } else {
+    // An open EB has no way round: span from the first to the last endpoint along the arc,
+    // measuring angles from where the first wedge starts so the opening is never crossed.
+    const from = layout.eb.startDeg;
+    const rel = pts.map((p) => (angle(p) - from + 360) % 360).sort((a, b) => a - b);
+    if (rel.length === 1 || rel[rel.length - 1] - rel[0] < 1e-6) {
+      return { path: null, attach: pts[0] };
+    }
+    start = from + rel[0];
+    end = from + rel[rel.length - 1];
   }
-  const start = angles[(gapAt + 1) % angles.length];
-  let end = angles[gapAt];
-  if (end < start) end += 360;
   const span = end - start;
 
   const a = polar(c, r, start);

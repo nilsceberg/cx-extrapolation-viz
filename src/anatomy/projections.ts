@@ -1,5 +1,5 @@
 /**
- * Parsing of data/fly-projections.json into a flat list of cells.
+ * Parsing of the projections file into a flat list of cells.
  *
  * The file is organised as  region -> cell type -> key -> subunits, e.g.
  *
@@ -20,7 +20,7 @@ export interface Cell {
   type: string;
   key: string;
   label: string;
-  /** Subunit ids (as in fly-neuropils.json) the cell projects to, per laid-out neuropil. */
+  /** Subunit ids (as in the neuropils file) the cell projects to, per laid-out neuropil. */
   subunits: Record<NeuropilName, string[]>;
   /** Noduli targets ("left" / "right"); not drawn yet since there is no NO layout. */
   noduli: string[];
@@ -40,7 +40,7 @@ export function parseCells(raw: unknown): Cell[] {
     for (const [type, byKey] of Object.entries(data[region])) {
       for (const [key, units] of Object.entries(byKey)) {
         if (!Array.isArray(units)) {
-          throw new Error(`fly-projections.json: ${region}/${type}/${key} must be an array`);
+          throw new Error(`projection data: ${region}/${type}/${key} must be an array`);
         }
         const id = `${type}:${key}`;
         let cell = cells.get(id);
@@ -77,12 +77,25 @@ export function assertKnownSubunits(cells: Cell[], known: ReadonlyMap<string, un
   }
 }
 
-/** Cells grouped by type, preserving file order. */
+/** The order cell types are listed in the menus; any other type follows, in file order. */
+const TYPE_ORDER = ["Delta7", "EPG", "PEG", "PEN_a", "PEN_b"];
+
+/**
+ * Cells grouped by type, in `TYPE_ORDER` (so every species lists them the same
+ * way, whatever order its file has). Within a type, cells keep their file order.
+ */
 export function groupByType(cells: Cell[]): { type: string; cells: Cell[] }[] {
   const groups = new Map<string, Cell[]>();
   for (const c of cells) {
     if (!groups.has(c.type)) groups.set(c.type, []);
     groups.get(c.type)!.push(c);
   }
-  return [...groups].map(([type, cs]) => ({ type, cells: cs }));
+  const rank = (type: string) => {
+    const i = TYPE_ORDER.indexOf(type);
+    return i === -1 ? TYPE_ORDER.length : i;
+  };
+  // Array.prototype.sort is stable, so unknown types keep their file order.
+  return [...groups]
+    .map(([type, cs]) => ({ type, cells: cs }))
+    .sort((a, b) => rank(a.type) - rank(b.type));
 }
