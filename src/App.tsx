@@ -106,6 +106,7 @@ export function App() {
           <CentralComplexView
             layout={layout}
             arborization={arborization}
+            isolated={{ pre: !!focus.pre, post: !!focus.post }}
             hovered={hovered}
             selected={selected}
             onHover={setHovered}
@@ -120,21 +121,9 @@ export function App() {
           </p>
           {selected && (focus.pre || focus.post) && (
             <p className="focus-note">
-              Showing only the kernel centred on <strong>{selected.id}</strong>
-              {focus.pre && (
-                <>
-                  {" "}
-                  for <span className="f-pre">pre</span>
-                </>
-              )}
-              {focus.pre && focus.post && " and"}
-              {focus.post && (
-                <>
-                  {" "}
-                  for <span className="f-post">post</span>
-                </>
-              )}
-              . Click empty space to show all projections. The synapse estimate below still uses all
+              Showing only the kernel centred on <strong>{selected.id}</strong> (in white) for{" "}
+              <strong>{[focus.pre && "pre", focus.post && "post"].filter(Boolean).join(" and ")}</strong>.
+              Click empty space to show all projections. The synapse estimate below still uses all
               projections.
             </p>
           )}

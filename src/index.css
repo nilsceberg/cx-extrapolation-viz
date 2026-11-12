@@ -157,6 +157,9 @@ main {
 .band { stroke: none; pointer-events: none; }
 .band.pre { fill: var(--pre); }
 .band.post { fill: var(--post); }
+/* A role showing a single isolated kernel is white instead of its colour. */
+.isolate-pre .band.pre, .isolate-pre .legend-swatch.pre,
+.isolate-post .band.post, .isolate-post .legend-swatch.post { fill: #fff; }
 .band.overlap { fill: var(--overlap); }
 
 /* Shown while a single projection's kernel is isolated. */
