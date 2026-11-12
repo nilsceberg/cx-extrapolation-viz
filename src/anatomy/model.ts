@@ -16,6 +16,11 @@ export interface ModelOptions {
   ebClosed?: boolean;
   /** Include the species' optional 10th PB column. Ignored for species without one. */
   tenthColumn?: boolean;
+  /**
+   * PB glomerulus count to size the diagram for, so that different species (or
+   * option sets) share one canvas. Defaults to the species' own full PB.
+   */
+  pbReserve?: number;
 }
 
 export interface Model {
@@ -70,7 +75,10 @@ export function buildModel(species: Species, options: ModelOptions = {}): Model 
       species.tenthColumn && !tenthColumn
         ? withoutPBUnits(species.data, species.tenthColumn)
         : species.data;
-    const layout = buildLayout(parseNeuropils(neuropils), { ebClosed });
+    // Size the canvas for at least the species' full PB, so hiding the 10th column only
+    // removes glomeruli at the ends (and never rescales the diagram).
+    const pbReserve = Math.max(options.pbReserve ?? 0, parseNeuropils(species.data.neuropils).PB.length);
+    const layout = buildLayout(parseNeuropils(neuropils), { ebClosed, pbReserve });
     const cells = parseCells(projections);
     assertKnownSubunits(cells, layout.subunitIndex);
     const kernels = parseKernels(species.data.structure);
@@ -89,10 +97,11 @@ const cache = new Map<string, Model>();
 export function getModel(species: Species, options: ModelOptions = {}): Model {
   const ebClosed = options.ebClosed ?? species.ebClosed;
   const tenthColumn = !!species.tenthColumn && (options.tenthColumn ?? true);
-  const key = `${species.id}:${ebClosed ? "closed" : "open"}:${tenthColumn ? "10th" : "no10th"}`;
+  const pbReserve = options.pbReserve ?? 0;
+  const key = `${species.id}:${ebClosed ? "closed" : "open"}:${tenthColumn ? "10th" : "no10th"}:${pbReserve}`;
   let model = cache.get(key);
   if (!model) {
-    model = buildModel(species, { ebClosed, tenthColumn });
+    model = buildModel(species, { ebClosed, tenthColumn, pbReserve });
     cache.set(key, model);
   }
   return model;

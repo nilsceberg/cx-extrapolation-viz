@@ -133,6 +133,11 @@ const EB_OPEN_GAP_DEG = 72;
 export interface LayoutOptions {
   /** Whether the EB is a closed ring (otherwise an open arc). */
   ebClosed: boolean;
+  /**
+   * Number of PB glomeruli to size the diagram for (at least the actual count).
+   * Fewer glomeruli sit centred in the same space, so nothing else moves or rescales.
+   */
+  pbReserve?: number;
 }
 
 // --- helpers ---------------------------------------------------------------
@@ -214,7 +219,7 @@ function toUnit(
 
 // --- builders --------------------------------------------------------------
 
-function buildPB(specs: UnitSpec[]) {
+function buildPB(specs: UnitSpec[], reserve = 0) {
   const n = specs.length;
   const pitch = GLOM_WIDTH + GLOM_GAP;
   // The midline falls where the hemisphere changes (R -> L in file order).
@@ -226,13 +231,16 @@ function buildPB(specs: UnitSpec[]) {
   // the two hemispheres; it replaces (rather than adds to) the regular gap there.
   const extraAtMidline = MIDLINE_GAP - GLOM_GAP;
   const totalSpan = n * pitch - GLOM_GAP + extraAtMidline;
-  const width = Math.max(MIN_WIDTH, totalSpan + 2 * MARGIN);
+  // The canvas (and the bridge's curvature) is sized for `reserve` glomeruli, if that is more.
+  const reservedSpan = Math.max(n, reserve) * pitch - GLOM_GAP + extraAtMidline;
+  const width = Math.max(MIN_WIDTH, reservedSpan + 2 * MARGIN);
   const left = (width - totalSpan) / 2;
+  const reservedLeft = (width - reservedSpan) / 2;
   // Right edge of the last glomerulus before the split, plus half the gap.
   const midlineX = left + split * pitch - GLOM_GAP + MIDLINE_GAP / 2;
 
   // Parabola y = PB_TOP + k * dx^2, with the farthest tip dropping by PB_DROP.
-  const farthest = Math.max(midlineX - left, left + totalSpan - midlineX);
+  const farthest = Math.max(midlineX - reservedLeft, reservedLeft + reservedSpan - midlineX);
   const k = PB_DROP / (farthest * farthest);
   const spineY = (x: number) => PB_TOP + k * (x - midlineX) ** 2;
   /** Tilt of the glomeruli (and of the spine's normal) at spine position x, in radians. */
@@ -383,8 +391,8 @@ function buildEB(specs: UnitSpec[], center: Point, closed: boolean) {
   });
 }
 
-export function buildLayout(neuropils: Neuropils, { ebClosed }: LayoutOptions): Layout {
-  const pb = buildPB(neuropils.PB);
+export function buildLayout(neuropils: Neuropils, { ebClosed, pbReserve }: LayoutOptions): Layout {
+  const pb = buildPB(neuropils.PB, pbReserve);
 
   const pbBottom = PB_TOP + PB_DROP + GLOM_HEIGHT / 2 + 40;
   const ebCenter: Point = { x: pb.midlineX, y: pbBottom + 60 + EB_OUTER_R };

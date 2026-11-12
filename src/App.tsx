@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getModel } from "./anatomy/model";
 import { Explorer } from "./components/Explorer";
-import { SPECIES } from "./data";
+import { PB_RESERVE, SPECIES } from "./data";
 
 export function App() {
   const [speciesId, setSpeciesId] = useState(SPECIES[0].id);
@@ -63,7 +63,7 @@ export function App() {
 
       {/* Keyed by species: selected cells and subunits don't carry over between species.
           Toggling the EB or the 10th column keeps them: only the geometry and data change. */}
-      <Explorer key={species.id} model={getModel(species, { ebClosed, tenthColumn })} />
+      <Explorer key={species.id} model={getModel(species, { ebClosed, tenthColumn, pbReserve: PB_RESERVE })} />
     </div>
   );
 }
