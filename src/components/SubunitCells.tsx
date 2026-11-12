@@ -1,6 +1,6 @@
 import type { Role, Subunit, Unit } from "../anatomy/layout";
 import type { Arborization } from "../anatomy/kernels";
-import { shadeClass, subunitHandlers, type SubunitInteraction } from "./interaction";
+import { subunitHandlers, type SubunitInteraction } from "./interaction";
 
 interface Props {
   units: Unit[];
@@ -12,9 +12,7 @@ const ROLES: Role[] = ["pre", "post"];
 
 /**
  * The clickable cells of a neuropil. Each subunit is drawn in layers:
- *   1. a background per half: the default hemisphere tint, or a neutral
- *      colour once a cell is selected for that role (so the kernel reads
- *      against a clean background),
+ *   1. a neutral background (so the kernel reads against a clean base),
  *   2. each half's kernel shading (opacity = relative arborization),
  *   3. the interactive cell itself: transparent, so it only supplies the
  *      border and the mouse/keyboard target,
@@ -29,14 +27,7 @@ export function SubunitCells({ units, interaction, arborization }: Props) {
     <>
       {subunits.map((s) => (
         <g key={s.id}>
-          {ROLES.map((role) => (
-            <path
-              key={`bg-${role}`}
-              // A selected cell for this role replaces the default tint of its half.
-              className={`bg ${shadeClass(s)}${arborization[role] ? " off" : ""}`}
-              d={s.halves[role]}
-            />
-          ))}
+          <path className="bg" d={s.path} />
           {ROLES.map((role) => (
             <path
               key={`kernel-${role}`}

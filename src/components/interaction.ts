@@ -9,11 +9,6 @@ export interface SubunitInteraction {
   onSelect: (subunit: Subunit | null) => void;
 }
 
-/** Classes that select a subunit's default background tint (hemisphere + side). */
-export function shadeClass(subunit: Subunit): string {
-  return `hemi-${subunit.hemisphere ?? "none"} side-${subunit.side}`;
-}
-
 export function unitOutlineClass(unit: Unit, { hovered, selected }: SubunitInteraction): string {
   const classes = ["unit-outline"];
   if (hovered?.unitId === unit.id) classes.push("hovered");

@@ -3,14 +3,11 @@
   --panel: #1a1f29;
   --text: #dde3ee;
   --muted: #8a93a6;
-  --left: #4f8fd6;
-  --right: #d98b4a;
-  --neutral: #4fb3a8;
   --stroke: #0c0e13;
-  /* Background of a subunit half once a cell is selected for its role. */
-  --empty: #232a37;
+  /* Background of every subunit: a neutral base for the kernel shading. */
+  --cell-bg: #232a37;
   --highlight: #ffe27a;
-  /* Roles in the synapse overlay. Distinct from the hemisphere / hover colours. */
+  /* Roles in the synapse overlay. */
   --pre: #f0568f;
   --post: #a8e04a;
   color-scheme: dark;
@@ -128,15 +125,8 @@ main {
 .subunit { fill: transparent; stroke: var(--stroke); stroke-width: 1; cursor: pointer; outline: none; }
 .subunit-hover { fill: #fff; fill-opacity: 0.14; pointer-events: none; }
 
-/* Default background: hemisphere tint, with the R/L side in a slightly different shade. */
-.bg { stroke: none; pointer-events: none; }
-.hemi-L { --tint: var(--left); }
-.hemi-R { --tint: var(--right); }
-.hemi-none { --tint: var(--neutral); }
-.bg.side-R { fill: color-mix(in srgb, var(--tint) 62%, var(--panel)); }
-.bg.side-L { fill: color-mix(in srgb, var(--tint) 42%, var(--panel)); }
-/* A cell is selected for this half's role: drop the tint so the kernel shading reads cleanly. */
-.bg.off { fill: var(--empty); }
+/* Neutral background; the kernel shading is drawn on top of it. */
+.bg { fill: var(--cell-bg); stroke: none; pointer-events: none; }
 
 /* Common outline of a glomerulus / wedge. */
 .unit-outline { fill: none; stroke: #5b667d; stroke-width: 1.5; stroke-linejoin: round; pointer-events: none; }
