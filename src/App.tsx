@@ -10,6 +10,7 @@ import {
   type Arborization,
 } from "./anatomy/kernels";
 import { buildLayout, type Subunit } from "./anatomy/layout";
+import { FLY_KERNEL_RULES } from "./anatomy/species";
 import { parseNeuropils } from "./anatomy/neuropils";
 import { assertKnownSubunits, parseCells } from "./anatomy/projections";
 import { CellList } from "./components/CellList";
@@ -48,8 +49,8 @@ export function App() {
   // Presynaptic cells shade their output kernel, postsynaptic cells their input kernel.
   const arborization = useMemo<Arborization>(
     () => ({
-      pre: pre ? computeArborization(layout, kernels, pre, "pre") : EMPTY_ARBORIZATION.pre,
-      post: post ? computeArborization(layout, kernels, post, "post") : EMPTY_ARBORIZATION.post,
+      pre: pre ? computeArborization(layout, kernels, FLY_KERNEL_RULES, pre, "pre") : EMPTY_ARBORIZATION.pre,
+      post: post ? computeArborization(layout, kernels, FLY_KERNEL_RULES, post, "post") : EMPTY_ARBORIZATION.post,
     }),
     [pre, post],
   );

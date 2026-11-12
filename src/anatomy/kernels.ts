@@ -11,14 +11,16 @@
  * screen, EB: clockwise around the ring as drawn). Offsets outside the listed
  * range contribute 0.
  *
- * For a cell, every projection contributes a copy of the kernel centred on it;
- * a subunit's arborization is the *maximum* over those contributions.
+ * For a cell, every projection contributes a copy of the kernel centred on it,
+ * mirrored (offset -> -offset) when the species' `shouldFlip` rule says so; a
+ * subunit's arborization is the *maximum* over those contributions.
  * Presynaptic cells use their output kernel, postsynaptic cells their input
- * kernel.
+ * kernel. Wrapping and flipping are species rules (see species.ts).
  */
 
 import type { Layout, Role } from "./layout";
 import type { NeuropilName } from "./neuropils";
+import type { KernelRules } from "./species";
 import type { Cell } from "./projections";
 
 export type Direction = "input" | "output";
@@ -40,9 +42,6 @@ export const EMPTY_ARBORIZATION: Arborization = { pre: new Map(), post: new Map(
 
 /** Which kernel each role uses. */
 export const ROLE_DIRECTION: Record<Role, Direction> = { pre: "output", post: "input" };
-
-/** The EB is a ring, so offsets wrap around; the PB is a bridge with two ends. */
-const WRAPS: Record<NeuropilName, boolean> = { PB: false, EB: true };
 
 const NEUROPILS: NeuropilName[] = ["PB", "EB"];
 const DIRECTIONS: Direction[] = ["input", "output"];
@@ -103,6 +102,7 @@ function offsetBetween(j: number, p: number, count: number, wrap: boolean): numb
 export function computeArborization(
   layout: Layout,
   kernels: Kernels,
+  rules: KernelRules,
   cell: Cell,
   role: Role,
 ): SubunitValues {
@@ -113,13 +113,19 @@ export function computeArborization(
 
     const order = layout.order[np];
     const indexOf = new Map(order.map((s, i) => [s.id, i]));
-    const projected = cell.subunits[np]
-      .map((id) => indexOf.get(id))
-      .filter((i): i is number => i !== undefined);
+    const projections = cell.subunits[np].flatMap((id) => {
+      const index = indexOf.get(id);
+      if (index === undefined) return [];
+      // Mirror this projection's kernel if the species rules say so.
+      return [{ index, flip: rules.shouldFlip(cell.type, id, cell.key) }];
+    });
 
     order.forEach((subunit, j) => {
       let v = 0;
-      for (const p of projected) v = Math.max(v, kernel.at(offsetBetween(j, p, order.length, WRAPS[np])));
+      for (const { index, flip } of projections) {
+        const offset = offsetBetween(j, index, order.length, rules.wraps[np]);
+        v = Math.max(v, kernel.at(flip ? -offset : offset));
+      }
       if (v > 0) values.set(subunit.id, v);
     });
   }
