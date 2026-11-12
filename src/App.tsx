@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import neuropilData from "../data/fly-neuropils.json";
 import projectionData from "../data/fly-projections.json";
+import structureData from "../data/fly-structure.json";
+import {
+  EMPTY_ARBORIZATION,
+  assertKernelsCoverCells,
+  computeArborization,
+  parseKernels,
+  type Arborization,
+} from "./anatomy/kernels";
 import { buildLayout, type Subunit } from "./anatomy/layout";
 import { parseNeuropils } from "./anatomy/neuropils";
 import { assertKnownSubunits, parseCells } from "./anatomy/projections";
@@ -12,11 +20,20 @@ import { EndpointMarkers } from "./components/EndpointMarkers";
 const layout = buildLayout(parseNeuropils(neuropilData));
 const cells = parseCells(projectionData);
 assertKnownSubunits(cells, layout.subunitIndex);
+const kernels = parseKernels(structureData);
+assertKernelsCoverCells(cells, kernels);
 
-function describe(s: Subunit): string {
+function describe(s: Subunit, arborization: Arborization): string {
   const unit = s.neuropil === "PB" ? "PB glomerulus" : "EB wedge";
-  return `${s.id} — ${s.side} subunit of ${unit} ${s.unitId}`;
+  const parts = [`${s.id} — ${s.side} subunit of ${unit} ${s.unitId}`];
+  const pre = arborization.pre.get(s.id);
+  const post = arborization.post.get(s.id);
+  if (pre !== undefined) parts.push(`pre (output) ${format(pre)}`);
+  if (post !== undefined) parts.push(`post (input) ${format(post)}`);
+  return parts.join(" · ");
 }
+
+const format = (v: number) => (v >= 0.001 ? v.toFixed(3) : v.toExponential(1));
 
 export function App() {
   const [hovered, setHovered] = useState<Subunit | null>(null);
@@ -27,6 +44,15 @@ export function App() {
   const pre = cells.find((c) => c.id === preId) ?? null;
   const post = cells.find((c) => c.id === postId) ?? null;
   const info = hovered ?? selected;
+
+  // Presynaptic cells shade their output kernel, postsynaptic cells their input kernel.
+  const arborization = useMemo<Arborization>(
+    () => ({
+      pre: pre ? computeArborization(layout, kernels, pre, "pre") : EMPTY_ARBORIZATION.pre,
+      post: post ? computeArborization(layout, kernels, post, "post") : EMPTY_ARBORIZATION.post,
+    }),
+    [pre, post],
+  );
 
   return (
     <div className="app">
@@ -47,6 +73,7 @@ export function App() {
         <div className="center">
           <CentralComplexView
             layout={layout}
+            arborization={arborization}
             hovered={hovered}
             selected={selected}
             onHover={setHovered}
@@ -54,10 +81,14 @@ export function App() {
             overlay={(l) => <EndpointMarkers layout={l} pre={pre} post={post} />}
           />
           <p className="readout">
-            {info ? describe(info) : "Hover or click a subunit."}
+            {info ? describe(info, arborization) : "Hover or click a subunit."}
             {selected && hovered && selected.id !== hovered.id && (
-              <span className="hint"> · selected: {describe(selected)}</span>
+              <span className="hint"> · selected: {describe(selected, arborization)}</span>
             )}
+          </p>
+          <p className="hint legend">
+            Shading = relative arborization from the cell type's kernel. Upper (PB) / outer (EB) half:
+            presynaptic output kernel. Lower / inner half: postsynaptic input kernel.
           </p>
         </div>
 

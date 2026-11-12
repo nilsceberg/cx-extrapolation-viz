@@ -129,7 +129,7 @@ main {
 .subunit.side-R { fill: color-mix(in srgb, var(--tint) 62%, var(--panel)); }
 .subunit.side-L { fill: color-mix(in srgb, var(--tint) 42%, var(--panel)); }
 .subunit.hovered { fill: var(--tint); }
-.subunit.selected { fill: var(--tint); stroke: #fff; stroke-width: 2; }
+.subunit.selected { fill: var(--tint); }
 
 /* Common outline of a glomerulus / wedge. */
 .unit-outline { fill: none; stroke: #5b667d; stroke-width: 1.5; stroke-linejoin: round; pointer-events: none; }
@@ -144,7 +144,8 @@ main {
 /* Endpoint markers. */
 .endpoints.pre .endpoint { fill: var(--pre); }
 .endpoints.post .endpoint { fill: var(--post); }
-.endpoint { stroke: var(--stroke); stroke-width: 1.5; }
+/* Light ring so a dot stays visible on top of a fully shaded half of its own colour. */
+.endpoint { stroke: #fff; stroke-width: 1.5; }
 
 /* Lines connecting a cell's endpoints. */
 .arbor path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -152,3 +153,11 @@ main {
 .arbor-line { stroke-width: 2.25; }
 .arbor.pre .arbor-line { stroke: var(--pre); }
 .arbor.post .arbor-line { stroke: var(--post); }
+
+/* Kernel shading: each subunit half is filled with its role colour at the
+   kernel's relative arborization (set inline as fill-opacity). */
+.half { stroke: none; pointer-events: none; }
+.half.pre { fill: var(--pre); }
+.half.post { fill: var(--post); }
+.divider { fill: none; stroke: var(--stroke); stroke-width: 0.75; opacity: 0.6; pointer-events: none; }
+.subunit-frame { fill: none; stroke: #fff; stroke-width: 2; stroke-linejoin: round; pointer-events: none; }

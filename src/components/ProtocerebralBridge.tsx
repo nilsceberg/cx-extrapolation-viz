@@ -1,29 +1,18 @@
 import type { Layout } from "../anatomy/layout";
-import {
-  subunitClass,
-  subunitHandlers,
-  unitOutlineClass,
-  type SubunitInteraction,
-} from "./interaction";
+import type { Arborization } from "../anatomy/kernels";
+import { unitOutlineClass, type SubunitInteraction } from "./interaction";
+import { SubunitCells } from "./SubunitCells";
 
 interface Props extends SubunitInteraction {
   pb: Layout["pb"];
+  arborization: Arborization;
 }
 
-export function ProtocerebralBridge({ pb, ...interaction }: Props) {
+export function ProtocerebralBridge({ pb, arborization, ...interaction }: Props) {
   return (
     <g className="pb" aria-label="Protocerebral bridge">
       <path className="pb-spine" d={pb.spine} />
-      {pb.units.flatMap((u) =>
-        u.subunits.map((s) => (
-          <path
-            key={s.id}
-            className={subunitClass(s, interaction)}
-            d={s.path}
-            {...subunitHandlers(s, interaction)}
-          />
-        )),
-      )}
+      <SubunitCells units={pb.units} interaction={interaction} arborization={arborization} />
       {/* Outlines are drawn after the cells so they frame them; they ignore the pointer. */}
       {pb.units.map((u) => (
         <path key={u.id} className={unitOutlineClass(u, interaction)} d={u.outline} />

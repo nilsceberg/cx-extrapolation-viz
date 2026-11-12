@@ -32,6 +32,14 @@ export interface Subunit {
   hemisphere: Side | null;
   /** SVG path of the cell, in layout space. */
   path: string;
+  /**
+   * The cell split in two along the neuropil's tangent: pre = upper half in the
+   * PB / outer half in the EB, post = lower half / inner half. Used to shade
+   * each role's arborization separately.
+   */
+  halves: Record<Role, string>;
+  /** Line along the split between the two halves. */
+  divider: string;
   /** Anchor for overlays/labels. */
   center: Point;
   /**
@@ -78,6 +86,8 @@ export interface Layout {
   };
   /** Lookup of every subunit by its data-file name. */
   subunitIndex: ReadonlyMap<string, Subunit>;
+  /** Subunits of each neuropil in spatial (file) order; kernel offsets count along this order. */
+  order: Record<NeuropilName, Subunit[]>;
 }
 
 // --- tunable look-and-feel constants (SVG user units) ---------------------
@@ -95,8 +105,8 @@ const PB_DROP = 56;
 const PB_TOP = 130;
 /** Outline sits this far outside the subunits. */
 const PB_OUTLINE_PAD = 2.5;
-/** Pre/post tracks run this far above/below the bridge's spine (fraction of glomerulus half-height). */
-const PB_TRACK_FRACTION = 0.45;
+/** Pre/post tracks run this far above/below the bridge's spine (fraction of glomerulus half-height): the centre of each half. */
+const PB_TRACK_FRACTION = 0.5;
 
 // EB
 const EB_INNER_R = 85;
@@ -161,7 +171,7 @@ function toUnit(
   outline: string,
   labelPos: Point,
   center: Point,
-  subunits: Pick<Subunit, "path" | "center" | "endpoints">[],
+  subunits: Pick<Subunit, "path" | "halves" | "divider" | "center" | "endpoints">[],
 ): Unit {
   const [a, b] = spec.subunits.map((s, i) => ({
     id: s.id,
@@ -223,10 +233,16 @@ function buildPB(specs: UnitSpec[]) {
       [0, hw],
     ].map(([x0, x1]) => {
       const r = rotatedRect(center, angle, x0, -hh, x1, hh);
+      const upper = rotatedRect(center, angle, x0, -hh, x1, 0);
+      const lower = rotatedRect(center, angle, x0, 0, x1, hh);
+      const a = r.at(x0, 0);
+      const b = r.at(x1, 0);
       // Markers sit exactly on the role's track so lines along the bridge pass through them.
       const x = center.x + (x0 + x1) / 2;
       return {
         path: r.path,
+        halves: { pre: upper.path, post: lower.path },
+        divider: `M ${f(a.x)} ${f(a.y)} L ${f(b.x)} ${f(b.y)}`,
         center: r.center,
         endpoints: {
           pre: { x, y: trackY("pre", x) },
@@ -278,13 +294,21 @@ function buildEB(specs: UnitSpec[], center: Point) {
       [half, a1],
     ].map(([s, e]) => {
       const thickness = EB_OUTER_R - EB_INNER_R;
+      const midR = EB_INNER_R + thickness / 2;
+      const a = polar(center, midR, s);
+      const b = polar(center, midR, e);
       return {
         path: annularSector(center, EB_INNER_R, EB_OUTER_R, s, e),
+        halves: {
+          pre: annularSector(center, midR, EB_OUTER_R, s, e),
+          post: annularSector(center, EB_INNER_R, midR, s, e),
+        },
+        divider: `M ${f(a.x)} ${f(a.y)} A ${midR} ${midR} 0 0 1 ${f(b.x)} ${f(b.y)}`,
         center: polar(center, mid, (s + e) / 2),
-        // Presynaptic marker toward the outer rim, postsynaptic toward the canal.
+        // Markers in the middle of their half: pre toward the outer rim, post toward the canal.
         endpoints: {
-          pre: polar(center, EB_INNER_R + thickness * 0.72, (s + e) / 2),
-          post: polar(center, EB_INNER_R + thickness * 0.28, (s + e) / 2),
+          pre: polar(center, EB_INNER_R + thickness * 0.75, (s + e) / 2),
+          post: polar(center, EB_INNER_R + thickness * 0.25, (s + e) / 2),
         },
       };
     });
@@ -340,6 +364,10 @@ export function buildLayout(neuropils: Neuropils): Layout {
       labelPos: { x: pb.midlineX, y: ebCenter.y - EB_OUTER_R - 48 },
     },
     subunitIndex,
+    order: {
+      PB: pb.units.flatMap((u) => u.subunits),
+      EB: ebUnits.flatMap((u) => u.subunits),
+    },
   };
 }
 

@@ -1,29 +1,18 @@
 import type { Layout } from "../anatomy/layout";
-import {
-  subunitClass,
-  subunitHandlers,
-  unitOutlineClass,
-  type SubunitInteraction,
-} from "./interaction";
+import type { Arborization } from "../anatomy/kernels";
+import { unitOutlineClass, type SubunitInteraction } from "./interaction";
+import { SubunitCells } from "./SubunitCells";
 
 interface Props extends SubunitInteraction {
   eb: Layout["eb"];
+  arborization: Arborization;
 }
 
-export function EllipsoidBody({ eb, ...interaction }: Props) {
+export function EllipsoidBody({ eb, arborization, ...interaction }: Props) {
   const { center, innerRadius } = eb;
   return (
     <g className="eb" aria-label="Ellipsoid body">
-      {eb.units.flatMap((u) =>
-        u.subunits.map((s) => (
-          <path
-            key={s.id}
-            className={subunitClass(s, interaction)}
-            d={s.path}
-            {...subunitHandlers(s, interaction)}
-          />
-        )),
-      )}
+      <SubunitCells units={eb.units} interaction={interaction} arborization={arborization} />
       {eb.units.map((u) => (
         <path key={u.id} className={unitOutlineClass(u, interaction)} d={u.outline} />
       ))}
