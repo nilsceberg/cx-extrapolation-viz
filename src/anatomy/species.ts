@@ -18,6 +18,12 @@ export interface Species {
    * it; an open EB is drawn as an arc with a gap and offsets stop at its ends.
    */
   ebClosed: boolean;
+  /**
+   * PB glomeruli that form an optional 10th column (e.g. ["R10", "L10"] for the
+   * bee), which the "10th column" toggle can leave out. Absent if the species
+   * has none; the toggle is then disabled and off.
+   */
+  tenthColumn?: string[];
   /** The species' data files, as parsed JSON. */
   data: {
     /** data/<species>-neuropils.json: every subunit of the PB and EB, in spatial order. */

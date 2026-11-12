@@ -20,6 +20,7 @@ export const SPECIES: Species[] = [
     name: "Bee",
     scientificName: "Megalopta genalis",
     ebClosed: false,
+    tenthColumn: ["R10", "L10"],
     data: { neuropils: beeNeuropils, projections: beeProjections, structure: beeStructure },
   },
 ];

@@ -8,11 +8,16 @@ export function App() {
   const species = SPECIES.find((s) => s.id === speciesId) ?? SPECIES[0];
   // Open/closed EB: starts as the species' own shape and can then be toggled by hand.
   const [ebClosed, setEbClosed] = useState(species.ebClosed);
+  // Optional 10th PB column: on whenever the species has one, otherwise off and disabled.
+  const hasTenthColumn = !!species.tenthColumn;
+  const [tenthColumn, setTenthColumn] = useState(hasTenthColumn);
 
   const chooseSpecies = (id: string) => {
     const next = SPECIES.find((s) => s.id === id) ?? SPECIES[0];
     setSpeciesId(next.id);
-    setEbClosed(next.ebClosed); // choosing a species resets the EB to that species' shape
+    // Choosing a species resets the toggles to that species' own settings.
+    setEbClosed(next.ebClosed);
+    setTenthColumn(!!next.tenthColumn);
   };
 
   return (
@@ -37,12 +42,28 @@ export function App() {
             <input type="checkbox" checked={ebClosed} onChange={(e) => setEbClosed(e.target.checked)} />
             <span>Closed EB</span>
           </label>
+          <label
+            className="eb-toggle"
+            title={
+              hasTenthColumn
+                ? "Include the 10th PB column (R10 / L10). When off, those subunits and any projections to them are ignored."
+                : "This species has no 10th PB column"
+            }
+          >
+            <input
+              type="checkbox"
+              checked={hasTenthColumn && tenthColumn}
+              disabled={!hasTenthColumn}
+              onChange={(e) => setTenthColumn(e.target.checked)}
+            />
+            <span>10th column</span>
+          </label>
         </div>
       </header>
 
       {/* Keyed by species: selected cells and subunits don't carry over between species.
-          Toggling the EB keeps them: only the geometry and kernel wrapping change. */}
-      <Explorer key={species.id} model={getModel(species, ebClosed)} />
+          Toggling the EB or the 10th column keeps them: only the geometry and data change. */}
+      <Explorer key={species.id} model={getModel(species, { ebClosed, tenthColumn })} />
     </div>
   );
 }
