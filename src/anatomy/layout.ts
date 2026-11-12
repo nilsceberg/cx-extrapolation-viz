@@ -220,14 +220,28 @@ function buildPB(specs: UnitSpec[]) {
   const farthest = Math.max(midlineX - left, left + totalSpan - midlineX);
   const k = PB_DROP / (farthest * farthest);
   const spineY = (x: number) => PB_TOP + k * (x - midlineX) ** 2;
-  const trackY = (role: Role, x: number) =>
-    spineY(x) + (role === "pre" ? -1 : 1) * GLOM_HEIGHT * 0.5 * PB_TRACK_FRACTION;
+  /** Tilt of the glomeruli (and of the spine's normal) at spine position x, in radians. */
+  const tilt = (x: number) => Math.atan(2 * k * (x - midlineX));
+  /**
+   * The role's track is the spine offset perpendicular to itself (glomeruli are
+   * tilted along the bridge, so a purely vertical offset would drift off their
+   * band centres). Pre is offset "up" (local -y), post "down" (local +y).
+   * Given the horizontal position X on the track, find the spine point it came
+   * from; the offset is small against the spine's curvature, so this
+   * fixed-point iteration converges in a couple of steps.
+   */
+  const trackY = (role: Role, X: number) => {
+    const offset = (role === "pre" ? -1 : 1) * GLOM_HEIGHT * 0.5 * PB_TRACK_FRACTION;
+    let xs = X;
+    for (let i = 0; i < 4; i++) xs = X + offset * Math.sin(tilt(xs));
+    return spineY(xs) + offset * Math.cos(tilt(xs));
+  };
 
   const units = specs.map((spec, i) => {
     const x0 = left + i * pitch + (i >= split ? extraAtMidline : 0);
     const cx = x0 + GLOM_WIDTH / 2;
     const center: Point = { x: cx, y: spineY(cx) };
-    const angle = (Math.atan(2 * k * (cx - midlineX)) * 180) / Math.PI;
+    const angle = (tilt(cx) * 180) / Math.PI;
     const hw = GLOM_WIDTH / 2;
     const hh = GLOM_HEIGHT / 2;
 
@@ -243,16 +257,18 @@ function buildPB(specs: UnitSpec[]) {
         const b = r.at(x1, y);
         return `M ${f(a.x)} ${f(a.y)} L ${f(b.x)} ${f(b.y)}`;
       };
-      // Markers sit exactly on the role's track so lines along the bridge pass through them.
-      const x = center.x + (x0 + x1) / 2;
+      // Markers sit at the centre of their band (in the glomerulus's tilted frame) and are
+      // snapped onto the role's track so lines along the bridge pass exactly through them.
+      const d = hh * PB_TRACK_FRACTION;
+      const markerX = (role: Role) => r.at((x0 + x1) / 2, role === "pre" ? -d : d).x;
       return {
         path: r.path,
         bands: { pre: band(-hh, -t), overlap: band(-t, t), post: band(t, hh) },
         divider: `${line(-t)} ${line(t)}`,
         center: r.center,
         endpoints: {
-          pre: { x, y: trackY("pre", x) },
-          post: { x, y: trackY("post", x) },
+          pre: { x: markerX("pre"), y: trackY("pre", markerX("pre")) },
+          post: { x: markerX("post"), y: trackY("post", markerX("post")) },
         },
       };
     });
