@@ -3,4 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  // Relative asset URLs, so the build works from any path (e.g. the
+  // https://<user>.github.io/<repo>/ subpath used by GitHub Pages).
+  base: "./",
 });
