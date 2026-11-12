@@ -18,7 +18,7 @@
  * kernel. Wrapping and flipping are species rules (see species.ts).
  */
 
-import type { Layout, Role } from "./layout";
+import type { Band, Layout, Role } from "./layout";
 import type { NeuropilName } from "./neuropils";
 import type { KernelRules } from "./species";
 import type { Cell } from "./projections";
@@ -36,10 +36,12 @@ export type Kernels = Record<NeuropilName, Record<string, Partial<Record<Directi
 
 /** Relative arborization (0..1) per subunit id; subunits with 0 are omitted. */
 export type SubunitValues = ReadonlyMap<string, number>;
-/** Per role: the cell's arborization, or null while no cell is selected for that role. */
-export type Arborization = Record<Role, SubunitValues | null>;
-
-export const NO_ARBORIZATION: Arborization = { pre: null, post: null };
+/**
+ * What each band of a subunit shows. `pre` / `post` are the selected cells'
+ * arborization (null while no cell is selected for that role); `overlap` is
+ * min(pre, post), and null unless both cells are selected.
+ */
+export type Arborization = Record<Band, SubunitValues | null>;
 
 /** Which kernel each role uses. */
 export const ROLE_DIRECTION: Record<Role, Direction> = { pre: "output", post: "input" };
@@ -89,6 +91,17 @@ export function assertKernelsCoverCells(cells: Cell[], kernels: Kernels): void {
       }
     }
   }
+}
+
+/** Per-subunit minimum of two arborizations: how much both cells arborize in the same place. */
+export function computeOverlap(pre: SubunitValues | null, post: SubunitValues | null): SubunitValues | null {
+  if (!pre || !post) return null;
+  const overlap = new Map<string, number>();
+  for (const [id, a] of pre) {
+    const b = post.get(id);
+    if (b !== undefined) overlap.set(id, Math.min(a, b));
+  }
+  return overlap;
 }
 
 /** Signed distance j - p in subunits, wrapped onto the shortest way round for rings. */

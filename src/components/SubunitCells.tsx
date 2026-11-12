@@ -1,4 +1,4 @@
-import type { Role, Subunit, Unit } from "../anatomy/layout";
+import type { Band, Subunit, Unit } from "../anatomy/layout";
 import type { Arborization } from "../anatomy/kernels";
 import { subunitHandlers, type SubunitInteraction } from "./interaction";
 
@@ -8,15 +8,17 @@ interface Props {
   arborization: Arborization;
 }
 
-const ROLES: Role[] = ["pre", "post"];
+const BANDS: Band[] = ["pre", "overlap", "post"];
 
 /**
  * The clickable cells of a neuropil. Each subunit is drawn in layers:
  *   1. a neutral background (so the kernel reads against a clean base),
- *   2. each half's kernel shading (opacity = relative arborization),
+ *   2. each band's shading (opacity = relative arborization): the presynaptic
+ *      and postsynaptic bands show their cell's kernel, the middle band shows
+ *      the overlap, min(pre, post),
  *   3. the interactive cell itself: transparent, so it only supplies the
  *      border and the mouse/keyboard target,
- *   4. the divider along the split and the hover highlight.
+ *   4. the dividers between the bands and the hover highlight.
  * The selection frame goes on top of everything so neighbours can't cover it.
  */
 export function SubunitCells({ units, interaction, arborization }: Props) {
@@ -28,12 +30,12 @@ export function SubunitCells({ units, interaction, arborization }: Props) {
       {subunits.map((s) => (
         <g key={s.id}>
           <path className="bg" d={s.path} />
-          {ROLES.map((role) => (
+          {BANDS.map((band) => (
             <path
-              key={`kernel-${role}`}
-              className={`half ${role}`}
-              d={s.halves[role]}
-              style={{ fillOpacity: arborization[role]?.get(s.id) ?? 0 }}
+              key={band}
+              className={`band ${band}`}
+              d={s.bands[band]}
+              style={{ fillOpacity: arborization[band]?.get(s.id) ?? 0 }}
             />
           ))}
           <path className="subunit" d={s.path} {...subunitHandlers(s, interaction)} />

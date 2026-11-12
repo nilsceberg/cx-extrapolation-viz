@@ -3,9 +3,9 @@ import neuropilData from "../data/fly-neuropils.json";
 import projectionData from "../data/fly-projections.json";
 import structureData from "../data/fly-structure.json";
 import {
-  NO_ARBORIZATION,
   assertKernelsCoverCells,
   computeArborization,
+  computeOverlap,
   parseKernels,
   type Arborization,
 } from "./anatomy/kernels";
@@ -29,8 +29,10 @@ function describe(s: Subunit, arborization: Arborization): string {
   const parts = [`${s.id} — ${s.side} subunit of ${unit} ${s.unitId}`];
   const pre = arborization.pre?.get(s.id);
   const post = arborization.post?.get(s.id);
+  const overlap = arborization.overlap?.get(s.id);
   if (pre !== undefined) parts.push(`pre (output) ${format(pre)}`);
   if (post !== undefined) parts.push(`post (input) ${format(post)}`);
+  if (overlap !== undefined) parts.push(`overlap (min) ${format(overlap)}`);
   return parts.join(" · ");
 }
 
@@ -47,13 +49,16 @@ export function App() {
   const info = hovered ?? selected;
 
   // Presynaptic cells shade their output kernel, postsynaptic cells their input kernel.
-  const arborization = useMemo<Arborization>(
-    () => ({
-      pre: pre ? computeArborization(layout, kernels, FLY_KERNEL_RULES, pre, "pre") : NO_ARBORIZATION.pre,
-      post: post ? computeArborization(layout, kernels, FLY_KERNEL_RULES, post, "post") : NO_ARBORIZATION.post,
-    }),
-    [pre, post],
-  );
+  const arborization = useMemo<Arborization>(() => {
+    const preValues = pre ? computeArborization(layout, kernels, FLY_KERNEL_RULES, pre, "pre") : null;
+    const postValues = post ? computeArborization(layout, kernels, FLY_KERNEL_RULES, post, "post") : null;
+    return {
+      pre: preValues,
+      post: postValues,
+      // How much both cells arborize in the same place.
+      overlap: computeOverlap(preValues, postValues),
+    };
+  }, [pre, post]);
 
   return (
     <div className="app">
@@ -88,8 +93,9 @@ export function App() {
             )}
           </p>
           <p className="hint legend">
-            Shading = relative arborization from the cell type's kernel. Upper (PB) / outer (EB) half:
-            presynaptic output kernel. Lower / inner half: postsynaptic input kernel.
+            Shading = relative arborization from the cell type's kernels. Upper (PB) / outer (EB) band:
+            presynaptic output kernel. Lower / inner band: postsynaptic input kernel. Middle band
+            (cyan): overlap, the minimum of the two.
           </p>
         </div>
 

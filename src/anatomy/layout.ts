@@ -7,7 +7,8 @@
  *
  * Two levels of structure are laid out:
  *   - Unit    : a PB glomerulus or EB wedge (drawn as a common outline)
- *   - Subunit : one of the two halves of a unit (the clickable cells)
+ *   - Subunit : one of the two halves of a unit (the clickable cells), itself
+ *               split into three bands: presynaptic / overlap / postsynaptic
  *
  * Rendering components only draw what they are given, and the neuron-overlay
  * layer can look up anchor points via `subunitIndex` without re-deriving any
@@ -33,12 +34,12 @@ export interface Subunit {
   /** SVG path of the cell, in layout space. */
   path: string;
   /**
-   * The cell split in two along the neuropil's tangent: pre = upper half in the
-   * PB / outer half in the EB, post = lower half / inner half. Used to shade
-   * each role's arborization separately.
+   * The cell split in three along the neuropil's tangent: pre = upper band in
+   * the PB / outer band in the EB, post = lower band / inner band, and the
+   * overlap band between them. Each band is shaded by its own quantity.
    */
-  halves: Record<Role, string>;
-  /** Line along the split between the two halves. */
+  bands: Record<Band, string>;
+  /** Lines along the two splits between the bands. */
   divider: string;
   /** Anchor for overlays/labels. */
   center: Point;
@@ -50,6 +51,8 @@ export interface Subunit {
 }
 
 export type Role = "pre" | "post";
+/** The three bands of a subunit: the two roles plus their overlap in the middle. */
+export type Band = Role | "overlap";
 
 export interface Unit {
   id: string;
@@ -97,7 +100,7 @@ const MIN_WIDTH = 800;
 
 // PB
 const GLOM_WIDTH = 36;
-const GLOM_HEIGHT = 52;
+const GLOM_HEIGHT = 72;
 const GLOM_GAP = 8;
 const MIDLINE_GAP = 18;
 /** How far the lateral ends of the PB sag relative to the midline. */
@@ -105,8 +108,8 @@ const PB_DROP = 56;
 const PB_TOP = 130;
 /** Outline sits this far outside the subunits. */
 const PB_OUTLINE_PAD = 2.5;
-/** Pre/post tracks run this far above/below the bridge's spine (fraction of glomerulus half-height): the centre of each half. */
-const PB_TRACK_FRACTION = 0.5;
+/** Pre/post tracks run this far above/below the bridge's spine (fraction of glomerulus half-height): the centre of the outer thirds. */
+const PB_TRACK_FRACTION = 2 / 3;
 
 // EB
 const EB_INNER_R = 85;
@@ -171,7 +174,7 @@ function toUnit(
   outline: string,
   labelPos: Point,
   center: Point,
-  subunits: Pick<Subunit, "path" | "halves" | "divider" | "center" | "endpoints">[],
+  subunits: Pick<Subunit, "path" | "bands" | "divider" | "center" | "endpoints">[],
 ): Unit {
   const [a, b] = spec.subunits.map((s, i) => ({
     id: s.id,
@@ -233,16 +236,19 @@ function buildPB(specs: UnitSpec[]) {
       [0, hw],
     ].map(([x0, x1]) => {
       const r = rotatedRect(center, angle, x0, -hh, x1, hh);
-      const upper = rotatedRect(center, angle, x0, -hh, x1, 0);
-      const lower = rotatedRect(center, angle, x0, 0, x1, hh);
-      const a = r.at(x0, 0);
-      const b = r.at(x1, 0);
+      const t = hh / 3; // each band is a third of the height
+      const band = (y0: number, y1: number) => rotatedRect(center, angle, x0, y0, x1, y1).path;
+      const line = (y: number) => {
+        const a = r.at(x0, y);
+        const b = r.at(x1, y);
+        return `M ${f(a.x)} ${f(a.y)} L ${f(b.x)} ${f(b.y)}`;
+      };
       // Markers sit exactly on the role's track so lines along the bridge pass through them.
       const x = center.x + (x0 + x1) / 2;
       return {
         path: r.path,
-        halves: { pre: upper.path, post: lower.path },
-        divider: `M ${f(a.x)} ${f(a.y)} L ${f(b.x)} ${f(b.y)}`,
+        bands: { pre: band(-hh, -t), overlap: band(-t, t), post: band(t, hh) },
+        divider: `${line(-t)} ${line(t)}`,
         center: r.center,
         endpoints: {
           pre: { x, y: trackY("pre", x) },
@@ -294,21 +300,27 @@ function buildEB(specs: UnitSpec[], center: Point) {
       [half, a1],
     ].map(([s, e]) => {
       const thickness = EB_OUTER_R - EB_INNER_R;
-      const midR = EB_INNER_R + thickness / 2;
-      const a = polar(center, midR, s);
-      const b = polar(center, midR, e);
+      // Three equal radial bands: post (inner), overlap (middle), pre (outer).
+      const r1 = EB_INNER_R + thickness / 3;
+      const r2 = EB_INNER_R + (2 * thickness) / 3;
+      const arc = (r: number) => {
+        const a = polar(center, r, s);
+        const b = polar(center, r, e);
+        return `M ${f(a.x)} ${f(a.y)} A ${f(r)} ${f(r)} 0 0 1 ${f(b.x)} ${f(b.y)}`;
+      };
       return {
         path: annularSector(center, EB_INNER_R, EB_OUTER_R, s, e),
-        halves: {
-          pre: annularSector(center, midR, EB_OUTER_R, s, e),
-          post: annularSector(center, EB_INNER_R, midR, s, e),
+        bands: {
+          pre: annularSector(center, r2, EB_OUTER_R, s, e),
+          overlap: annularSector(center, r1, r2, s, e),
+          post: annularSector(center, EB_INNER_R, r1, s, e),
         },
-        divider: `M ${f(a.x)} ${f(a.y)} A ${midR} ${midR} 0 0 1 ${f(b.x)} ${f(b.y)}`,
+        divider: `${arc(r1)} ${arc(r2)}`,
         center: polar(center, mid, (s + e) / 2),
-        // Markers in the middle of their half: pre toward the outer rim, post toward the canal.
+        // Markers in the middle of their band: pre toward the outer rim, post toward the canal.
         endpoints: {
-          pre: polar(center, EB_INNER_R + thickness * 0.75, (s + e) / 2),
-          post: polar(center, EB_INNER_R + thickness * 0.25, (s + e) / 2),
+          pre: polar(center, EB_INNER_R + thickness * (5 / 6), (s + e) / 2),
+          post: polar(center, EB_INNER_R + thickness * (1 / 6), (s + e) / 2),
         },
       };
     });

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Arborization } from "../anatomy/kernels";
 import type { Layout } from "../anatomy/layout";
+import { ColorLegend } from "./ColorLegend";
 import { EllipsoidBody } from "./EllipsoidBody";
 import { ProtocerebralBridge } from "./ProtocerebralBridge";
 import type { SubunitInteraction } from "./interaction";
@@ -35,6 +36,7 @@ export function CentralComplexView({ layout, arborization, overlay, ...interacti
       <ProtocerebralBridge pb={layout.pb} arborization={arborization} {...interaction} />
       <EllipsoidBody eb={layout.eb} arborization={arborization} {...interaction} />
       {overlay?.(layout)}
+      <ColorLegend layout={layout} />
     </svg>
   );
 }
