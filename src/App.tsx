@@ -13,9 +13,11 @@ import { buildLayout, type Subunit } from "./anatomy/layout";
 import { FLY_KERNEL_RULES } from "./anatomy/species";
 import { parseNeuropils } from "./anatomy/neuropils";
 import { assertKnownSubunits, parseCells } from "./anatomy/projections";
+import { assertScalesCoverCells, estimateSynapses, parseScales } from "./anatomy/synapses";
 import { CellList } from "./components/CellList";
 import { CentralComplexView } from "./components/CentralComplexView";
 import { EndpointMarkers } from "./components/EndpointMarkers";
+import { SynapseFormula } from "./components/SynapseFormula";
 
 // Parsed once at module load: the data is static and a parse error should be loud.
 const layout = buildLayout(parseNeuropils(neuropilData));
@@ -23,6 +25,8 @@ const cells = parseCells(projectionData);
 assertKnownSubunits(cells, layout.subunitIndex);
 const kernels = parseKernels(structureData);
 assertKernelsCoverCells(cells, kernels);
+const scales = parseScales(structureData);
+assertScalesCoverCells(cells, scales);
 
 function describe(s: Subunit, arborization: Arborization): string {
   const unit = s.neuropil === "PB" ? "PB glomerulus" : "EB wedge";
@@ -60,6 +64,12 @@ export function App() {
     };
   }, [pre, post]);
 
+  // Total synapses between the pair: the overlap summed per neuropil, times the type-pair scale.
+  const synapses = useMemo(
+    () => (pre && post && arborization.overlap ? estimateSynapses(layout, scales, pre, post, arborization.overlap) : null),
+    [pre, post, arborization],
+  );
+
   return (
     <div className="app">
       <header>
@@ -92,6 +102,7 @@ export function App() {
               <span className="hint"> · selected: {describe(selected, arborization)}</span>
             )}
           </p>
+          <SynapseFormula estimate={synapses} />
           <p className="hint legend">
             Shading = relative arborization from the cell type's kernels. Upper (PB) / outer (EB) band:
             presynaptic output kernel. Lower / inner band: postsynaptic input kernel. Middle band
