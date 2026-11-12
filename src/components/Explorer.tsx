@@ -26,14 +26,23 @@ const format = (v: number) => (v >= 0.001 ? v.toFixed(3) : v.toExponential(1));
  * The diagram, the two cell lists and the readouts for one species. All of its
  * state (selected cells and subunit) belongs to that species: mount it with a
  * `key` per species so switching species starts fresh.
+ *
+ * The same species can be shown with a different layout (open or closed EB); the
+ * selection survives that, so it is kept as ids and resolved against the current
+ * layout rather than holding subunit objects from an old one.
  */
 export function Explorer({ model }: { model: Model }) {
   const { layout, cells, kernels, scales, rules } = model;
 
-  const [hovered, setHovered] = useState<Subunit | null>(null);
-  const [selected, setSelected] = useState<Subunit | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [preId, setPreId] = useState<string | null>(null);
   const [postId, setPostId] = useState<string | null>(null);
+
+  const hovered = (hoveredId && layout.subunitIndex.get(hoveredId)) || null;
+  const selected = (selectedId && layout.subunitIndex.get(selectedId)) || null;
+  const setHovered = (s: Subunit | null) => setHoveredId(s?.id ?? null);
+  const setSelected = (s: Subunit | null) => setSelectedId(s?.id ?? null);
 
   const pre = cells.find((c) => c.id === preId) ?? null;
   const post = cells.find((c) => c.id === postId) ?? null;

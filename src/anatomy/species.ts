@@ -13,9 +13,9 @@ export interface Species {
   /** Scientific name, e.g. "Drosophila melanogaster". */
   scientificName: string;
   /**
-   * Whether the EB is a closed ring. A closed EB is drawn as a full ring and
-   * kernel offsets wrap around it; an open EB is drawn as an arc with a gap
-   * and offsets stop at its ends.
+   * Whether the species' EB is a closed ring: the default for the open/closed
+   * toggle. A closed EB is drawn as a full ring and kernel offsets wrap around
+   * it; an open EB is drawn as an arc with a gap and offsets stop at its ends.
    */
   ebClosed: boolean;
   /** The species' data files, as parsed JSON. */
@@ -54,10 +54,11 @@ const shouldFlip: KernelRules["shouldFlip"] = (type, column, subtype) => {
   return subtype[0] === "L";
 };
 
-export function kernelRulesFor(species: Species): KernelRules {
+/** Kernel rules for a species, with the EB treated as closed (wrapping) or open. */
+export function kernelRulesFor(ebClosed: boolean): KernelRules {
   return {
     // The PB is a bridge; the EB wraps only if it is a closed ring.
-    wraps: { PB: false, EB: species.ebClosed },
+    wraps: { PB: false, EB: ebClosed },
     shouldFlip,
   };
 }

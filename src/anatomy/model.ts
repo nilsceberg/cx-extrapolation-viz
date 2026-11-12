@@ -12,6 +12,8 @@ import { assertScalesCoverCells, parseScales, type Scales } from "./synapses";
 
 export interface Model {
   species: Species;
+  /** Whether the EB is treated as a closed ring (drawn closed, kernels wrap) or open. */
+  ebClosed: boolean;
   layout: Layout;
   cells: Cell[];
   kernels: Kernels;
@@ -19,17 +21,18 @@ export interface Model {
   rules: KernelRules;
 }
 
-export function buildModel(species: Species): Model {
+/** `ebClosed` defaults to the species' own EB; pass it to override (e.g. from a toggle). */
+export function buildModel(species: Species, ebClosed: boolean = species.ebClosed): Model {
   try {
     const { neuropils, projections, structure } = species.data;
-    const layout = buildLayout(parseNeuropils(neuropils), { ebClosed: species.ebClosed });
+    const layout = buildLayout(parseNeuropils(neuropils), { ebClosed });
     const cells = parseCells(projections);
     assertKnownSubunits(cells, layout.subunitIndex);
     const kernels = parseKernels(structure);
     assertKernelsCoverCells(cells, kernels);
     const scales = parseScales(structure);
     assertScalesCoverCells(cells, scales);
-    return { species, layout, cells, kernels, scales, rules: kernelRulesFor(species) };
+    return { species, ebClosed, layout, cells, kernels, scales, rules: kernelRulesFor(ebClosed) };
   } catch (e) {
     throw new Error(`${species.scientificName}: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
   }
@@ -37,12 +40,13 @@ export function buildModel(species: Species): Model {
 
 const cache = new Map<string, Model>();
 
-/** The model for a species, built on first use. */
-export function getModel(species: Species): Model {
-  let model = cache.get(species.id);
+/** The model for a species and EB shape, built on first use. */
+export function getModel(species: Species, ebClosed: boolean = species.ebClosed): Model {
+  const key = `${species.id}:${ebClosed ? "closed" : "open"}`;
+  let model = cache.get(key);
   if (!model) {
-    model = buildModel(species);
-    cache.set(species.id, model);
+    model = buildModel(species, ebClosed);
+    cache.set(key, model);
   }
   return model;
 }
