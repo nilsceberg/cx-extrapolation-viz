@@ -9,7 +9,7 @@ import {
   parseKernels,
   type Arborization,
 } from "./anatomy/kernels";
-import { buildLayout, type Subunit } from "./anatomy/layout";
+import { buildLayout, type Role, type Subunit } from "./anatomy/layout";
 import { FLY_KERNEL_RULES } from "./anatomy/species";
 import { parseNeuropils } from "./anatomy/neuropils";
 import { assertKnownSubunits, parseCells } from "./anatomy/projections";
@@ -52,8 +52,15 @@ export function App() {
   const post = cells.find((c) => c.id === postId) ?? null;
   const info = hovered ?? selected;
 
+  // Selecting a subunit that a cell projects to isolates that projection: the cell is then shaded
+  // with only the kernel centred on it, instead of the max over all of its projections.
+  const focus: Record<Role, string | undefined> = {
+    pre: selected && pre?.subunits[selected.neuropil].includes(selected.id) ? selected.id : undefined,
+    post: selected && post?.subunits[selected.neuropil].includes(selected.id) ? selected.id : undefined,
+  };
+
   // Presynaptic cells shade their output kernel, postsynaptic cells their input kernel.
-  const arborization = useMemo<Arborization>(() => {
+  const full = useMemo<Arborization>(() => {
     const preValues = pre ? computeArborization(layout, kernels, FLY_KERNEL_RULES, pre, "pre") : null;
     const postValues = post ? computeArborization(layout, kernels, FLY_KERNEL_RULES, post, "post") : null;
     return {
@@ -64,10 +71,19 @@ export function App() {
     };
   }, [pre, post]);
 
+  // What is shaded: the full arborization, or the single focused contribution(s).
+  const arborization = useMemo<Arborization>(() => {
+    if (!focus.pre && !focus.post) return full;
+    const preValues = pre && focus.pre ? computeArborization(layout, kernels, FLY_KERNEL_RULES, pre, "pre", focus.pre) : full.pre;
+    const postValues = post && focus.post ? computeArborization(layout, kernels, FLY_KERNEL_RULES, post, "post", focus.post) : full.post;
+    return { pre: preValues, post: postValues, overlap: computeOverlap(preValues, postValues) };
+  }, [full, pre, post, focus.pre, focus.post]);
+
   // Total synapses between the pair: the overlap summed per neuropil, times the type-pair scale.
+  // Always for the whole cells, regardless of the focused projection.
   const synapses = useMemo(
-    () => (pre && post && arborization.overlap ? estimateSynapses(layout, scales, pre, post, arborization.overlap) : null),
-    [pre, post, arborization],
+    () => (pre && post && full.overlap ? estimateSynapses(layout, scales, pre, post, full.overlap) : null),
+    [pre, post, full],
   );
 
   return (
@@ -102,6 +118,26 @@ export function App() {
               <span className="hint"> · selected: {describe(selected, arborization)}</span>
             )}
           </p>
+          {selected && (focus.pre || focus.post) && (
+            <p className="focus-note">
+              Showing only the kernel centred on <strong>{selected.id}</strong>
+              {focus.pre && (
+                <>
+                  {" "}
+                  for <span className="f-pre">pre</span>
+                </>
+              )}
+              {focus.pre && focus.post && " and"}
+              {focus.post && (
+                <>
+                  {" "}
+                  for <span className="f-post">post</span>
+                </>
+              )}
+              . Click empty space to show all projections. The synapse estimate below still uses all
+              projections.
+            </p>
+          )}
           <SynapseFormula estimate={synapses} />
           <p className="hint legend">
             Shading = relative arborization from the cell type's kernels. Upper (PB) / outer (EB) band:

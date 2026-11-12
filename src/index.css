@@ -159,6 +159,18 @@ main {
 .band.post { fill: var(--post); }
 .band.overlap { fill: var(--overlap); }
 
+/* Shown while a single projection's kernel is isolated. */
+.focus-note {
+  margin: 0.6rem 0 0;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: var(--panel);
+  border-left: 3px solid #fff;
+  border-radius: 4px;
+}
+.focus-note strong { color: var(--text); }
+
 /* Synapse formula below the diagram; colours match the bands. */
 .synapse-formula {
   margin-top: 0.8rem;

@@ -112,13 +112,20 @@ function offsetBetween(j: number, p: number, count: number, wrap: boolean): numb
   return m > count / 2 ? m - count : m;
 }
 
-/** Arborization of one cell in one role: max over projections of the shifted kernel. */
+/**
+ * Arborization of one cell in one role: max over projections of the shifted kernel.
+ *
+ * With `only` (a subunit id), just that projection's kernel contribution is
+ * computed, i.e. the kernel centred on it; projections elsewhere (also in the
+ * other neuropil) are ignored.
+ */
 export function computeArborization(
   layout: Layout,
   kernels: Kernels,
   rules: KernelRules,
   cell: Cell,
   role: Role,
+  only?: string,
 ): SubunitValues {
   const values = new Map<string, number>();
   for (const np of NEUROPILS) {
@@ -129,7 +136,7 @@ export function computeArborization(
     const indexOf = new Map(order.map((s, i) => [s.id, i]));
     const projections = cell.subunits[np].flatMap((id) => {
       const index = indexOf.get(id);
-      if (index === undefined) return [];
+      if (index === undefined || (only !== undefined && id !== only)) return [];
       // Mirror this projection's kernel if the species rules say so.
       return [{ index, flip: rules.shouldFlip(cell.type, id, cell.key) }];
     });
