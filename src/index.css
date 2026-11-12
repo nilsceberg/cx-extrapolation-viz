@@ -51,7 +51,7 @@ header p { margin: 0.25rem 0 1rem; color: var(--muted); }
 /* Presynaptic list | diagram | postsynaptic list */
 main {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr) 210px;
+  grid-template-columns: 250px minmax(0, 1fr) 250px;
   gap: 1.25rem;
   align-items: start;
 }
@@ -90,6 +90,7 @@ main {
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  white-space: nowrap;
 }
 .swatch { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--role); }
 .cell-list button {
